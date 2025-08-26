@@ -1,0 +1,52 @@
+[
+  {
+    "targets": [
+      "https://10.64.11.115/healthz/chain1"
+    ],
+    "labels": {
+      "apigee_hostname": "test1.api.example.com",
+      "apigee_basepath": "/chain1",
+      "job": "apigee-health"
+    }
+  },
+  {
+    "targets": [
+      "https://10.64.11.115/healthz/mock"
+    ],
+    "labels": {
+      "apigee_hostname": "test1.api.example.com",
+      "apigee_basepath": "/mock",
+      "job": "apigee-health"
+    }
+  },
+  {
+    "targets": [
+      "https://10.64.11.115/healthz/mock-internal"
+    ],
+    "labels": {
+      "apigee_hostname": "test1.api.example.com",
+      "apigee_basepath": "/mock-internal",
+      "job": "apigee-health"
+    }
+  },
+  {
+    "targets": [
+      "https://10.64.11.115/healthz/test"
+    ],
+    "labels": {
+      "apigee_hostname": "test1.api.example.com",
+      "apigee_basepath": "/test",
+      "job": "apigee-health"
+    }
+  },
+  {
+    "targets": [
+      "https://10.64.11.115/healthz/mock"
+    ],
+    "labels": {
+      "apigee_hostname": "test2.api.example.com",
+      "apigee_basepath": "/mock",
+      "job": "apigee-health"
+    }
+  }
+]

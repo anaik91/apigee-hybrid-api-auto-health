@@ -1,0 +1,37 @@
+{{- if .Values.serviceAccount.create -}}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "prometheus-apigee-exporter.serviceAccountName" . }}
+  labels:
+    {{- include "prometheus-apigee-exporter.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "prometheus-apigee-exporter.fullname" . }}
+  labels:
+    {{- include "prometheus-apigee-exporter.labels" . | nindent 4 }}
+rules:
+- apiGroups: ["apigee.cloud.google.com"]
+  resources: ["apigeeroutes"]
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "prometheus-apigee-exporter.fullname" . }}
+  labels:
+    {{- include "prometheus-apigee-exporter.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "prometheus-apigee-exporter.fullname" . }}
+subjects:
+- kind: ServiceAccount
+  name: {{ include "prometheus-apigee-exporter.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+{{- end }}

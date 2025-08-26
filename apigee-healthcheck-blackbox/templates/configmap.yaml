@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "prometheus-apigee-exporter.fullname" . }}-blackbox
+  labels:
+    {{- include "prometheus-apigee-exporter.labels" . | nindent 4 }}
+data:
+  config.yml: |
+    modules:
+      {{ .Values.prometheus.moduleName }}:
+        prober: http
+        timeout: 10s
+        http:
+          valid_status_codes: [200]
+          method: GET
+          headers:
+            User-Agent: {{ .Values.blackboxExporter.config.userAgent | quote }}
+          tls_config:
+            insecure_skip_verify: {{ .Values.blackboxExporter.config.insecureSkipVerify }}

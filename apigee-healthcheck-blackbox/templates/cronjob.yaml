@@ -1,0 +1,43 @@
+{{- if .Values.cronjob.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "prometheus-apigee-exporter.fullname" . }}-discover
+  labels:
+    {{- include "prometheus-apigee-exporter.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.cronjob.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: {{ include "prometheus-apigee-exporter.name" . }}-discover
+            app.kubernetes.io/instance: {{ .Release.Name }}
+        spec:
+          serviceAccountName: {{ include "prometheus-apigee-exporter.serviceAccountName" . }}
+          restartPolicy: OnFailure
+          containers:
+          - name: target-generator
+            image: "{{ .Values.cronjob.image.repository }}:{{ .Values.cronjob.image.tag }}"
+            imagePullPolicy: IfNotPresent
+            args:
+              - "--namespace={{ .Values.cronjob.apigeeNamespace }}"
+              - "--service-name={{ .Values.cronjob.apigeeIngressService }}"
+              - "--outfile={{ .Values.prometheus.targetFile }}"
+            volumeMounts:
+              - name: targets-volume
+                mountPath: "{{ .Values.prometheus.targetFile | dir }}"
+          volumes:
+          {{- if .Values.persistence.enabled }}
+            - name: targets-volume
+              persistentVolumeClaim:
+                claimName: {{ include "prometheus-apigee-exporter.fullname" . }}-pvc
+          {{- else }}
+            - name: targets-volume
+              emptyDir: {}
+          {{- end }}
+{{- end }}

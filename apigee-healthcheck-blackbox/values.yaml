@@ -1,0 +1,48 @@
+# -- Configuration for the Blackbox Exporter deployment
+blackboxExporter:
+  image:
+    repository: prom/blackbox-exporter
+    tag: v0.24.0
+  replicaCount: 1
+  config:
+    # -- Skip TLS verification for probes. Set to false if you have valid certs.
+    insecureSkipVerify: true
+    # -- The User-Agent header required by Apigee health checks.
+    userAgent: "GoogleHC"
+
+# -- Configuration for the CronJob that discovers Apigee routes
+cronjob:
+  # -- Enable the CronJob to discover targets.
+  enabled: true
+  # -- Cron schedule to run the discovery.
+  schedule: "*/15 * * * *"
+  image:
+    # -- IMPORTANT: Change this to the image you built and pushed.
+    repository: your-registry/apigee-target-generator
+    tag: v1.0.0
+  # -- Apigee namespace to scan for ApigeeRoutes.
+  apigeeNamespace: "apigee"
+  # -- The name of the Apigee ingress K8s service to get the IP from.
+  apigeeIngressService: "apigee-ingressgateway" # Change this to your actual service name
+
+# -- Configuration for the PersistentVolumeClaim to store the targets file
+persistence:
+  enabled: true
+  # -- Storage class for the PVC. If null, the default is used.
+  storageClassName: null
+  # -- Size of the PVC.
+  size: 1Gi
+
+# -- Configuration for the Prometheus scrape job
+prometheus:
+  # -- The name of the generated Prometheus scrape job.
+  scrapeJobName: "apigee-health-blackbox"
+  # -- The module name defined in the Blackbox Exporter config.
+  moduleName: "http_2xx"
+  # -- The path inside the pods where the shared targets file will be mounted.
+  targetFile: "/etc/prometheus/targets/apigee_targets.json"
+
+# -- RBAC configuration for the CronJob's ServiceAccount
+serviceAccount:
+  create: true
+  name: ""

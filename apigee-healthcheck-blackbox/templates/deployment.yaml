@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "prometheus-apigee-exporter.fullname" . }}-blackbox
+  labels:
+    {{- include "prometheus-apigee-exporter.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.blackboxExporter.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "prometheus-apigee-exporter.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "prometheus-apigee-exporter.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: blackbox-exporter
+          image: "{{ .Values.blackboxExporter.image.repository }}:{{ .Values.blackboxExporter.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          args:
+            - --config.file=/config/config.yml
+          ports:
+            - name: http
+              containerPort: 9115
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: http
+          volumeMounts:
+            - name: config
+              mountPath: /config
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "prometheus-apigee-exporter.fullname" . }}-blackbox

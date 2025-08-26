@@ -1,0 +1,35 @@
+# Python-specific ignores
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python/
+env/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+pip-log.txt
+pip-delete-this-directory.txt
+.coverage
+.tox/
+.DS_Store
+
+# Helm-specific ignores (if your Helm charts are in the same build context)
+helm-charts/
+*.tgz
+*.tar.gz
+.helmignore
+
+# General development and build tool ignores
+.git/
+.gitignore
+.vscode/
+.idea/
+*.log
+*.swp
+tmp/
+dist/
+build/
+.env
