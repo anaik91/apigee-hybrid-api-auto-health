@@ -10,7 +10,7 @@ It uses a Kubernetes-native approach to dynamically discover API proxy basepaths
 The monitoring workflow consists of several components working together:
 - **Kubernetes CronJob:** Runs a Python script on a schedule. This script connects to the Kubernetes API to discover all ApigeeRoute resources.
 - **Service Discovery:** The script parses the resources to find all externally-facing hostnames and API proxy basepaths. It also fetches the ClusterIP of the Apigee ingress service to enable probing without DNS.
-- **Persistent Volume Claim (PVC): The CronJob writes the discovered URLs into a apigee_targets.json file on a shared PVC. This file is formatted for Prometheus's file-based service discovery.
+- **Persistent Volume Claim (PVC):** The CronJob writes the discovered URLs into a apigee_targets.json file on a shared PVC. This file is formatted for Prometheus's file-based service discovery.
 - **Blackbox Exporter:** A standard Prometheus exporter that is deployed by the Helm chart. Its job is to perform the actual health probes against the targets.
 - **Prometheus:** Your existing Prometheus instance is configured to read the apigee_targets.json file from the PVC. For each target, it scrapes the Blackbox Exporter, which then sends the specialized health check probe (/healthz/... with User-Agent: GoogleHC) to the Apigee ingress.
 
