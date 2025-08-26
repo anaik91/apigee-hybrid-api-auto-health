@@ -14,17 +14,67 @@ The monitoring workflow consists of several components working together:
 - **Blackbox Exporter:** A standard Prometheus exporter that is deployed by the Helm chart. Its job is to perform the actual health probes against the targets.
 - **Prometheus:** Your existing Prometheus instance is configured to read the apigee_targets.json file from the PVC. For each target, it scrapes the Blackbox Exporter, which then sends the specialized health check probe (/healthz/... with User-Agent: GoogleHC) to the Apigee ingress.
 
-```
-┌───────────────┐      ┌─────────────────────────┐      ┌──────────────────┐
-│   Kubernetes  │      │   Python Script         │      │     Shared PVC   │
-│      API      │<────>│ (in K8s CronJob)        │─────>│ apigee_targets.json│
-└───────────────┘      └─────────────────────────┘      └──────────────────┘
-                                                                 ^
-                                                                 │ (reads targets)
-┌───────────────┐      ┌──────────────────┐      ┌───────────────┴──┐
-│ Apigee Ingress│<──── │ Blackbox Exporter│ <────│    Prometheus    │
-│ (K8s Service) │      │ (probes endpoint)│      │ (scrapes exporter) │
-└───────────────┘      └──────────────────┘      └──────────────────┘
+Here is a diagram that visually represents the architecture of the solution. 
+
+```mermaid
+graph TD
+    subgraph "Deployment Process (One-Time Setup)"
+        direction LR
+        Admin[<i class="fa fa-user"></i> Admin] -- executes --> DeployScript(deploy.sh)
+        DeployScript -- "1. triggers build" --> GCB(Google Cloud Build)
+        GCB -- "2. pushes image" --> GAR(Google Artifact Registry)
+        DeployScript -- "3. deploys" --> Helm(Helm Chart)
+    end
+
+    subgraph "Kubernetes Cluster Resources (Provisioned by Helm)"
+        direction TB
+        Helm -- creates --> K8sResources
+        
+        subgraph K8sResources [" "]
+            direction LR
+            CronJob(CronJob <br> 'generate_targets.py')
+            RBAC(ServiceAccount, Role)
+            PVC(PersistentVolumeClaim)
+            BlackboxDeploy(Blackbox Exporter <br> Deployment)
+            BlackboxSvc(Blackbox Exporter <br> Service)
+        end
+
+        CronJob -- uses --> RBAC
+        CronJob -- "writes targets to" --> PVC
+        BlackboxDeploy -- "exposed by" --> BlackboxSvc
+    end
+
+    subgraph "Monitoring Loop (Continuous)"
+        direction TB
+        
+        subgraph "Service Discovery (Scheduled)"
+             K8sAPI(Kubernetes API Server)
+             CronJob -- "1. queries for ApigeeRoutes & Service IP" --> K8sAPI
+        end
+
+        subgraph "Probing (Prometheus Scrape Interval)"
+            Prometheus[<i class="fa fa-cogs"></i> Prometheus] -- "2. reads 'apigee_targets.json' from" --> PVC
+            Prometheus -- "3. sends scrape request to" --> BlackboxSvc
+            BlackboxSvc -- "4. performs health probe <br> (sets Host & User-Agent headers)" --> ApigeeIngress(Apigee Ingress <br> Service IP)
+        end
+    end
+
+    %% Styling
+    style Admin fill:#e6f2ff,stroke:#0055cc,stroke-width:2px
+    style DeployScript fill:#e6f2ff,stroke:#0055cc,stroke-width:2px
+    style GCB fill:#e6f2ff,stroke:#0055cc,stroke-width:2px
+    style GAR fill:#e6f2ff,stroke:#0055cc,stroke-width:2px
+    style Helm fill:#e6f2ff,stroke:#0055cc,stroke-width:2px
+    
+    style CronJob fill:#d5f5e3,stroke:#1d8348,stroke-width:2px
+    style RBAC fill:#d5f5e3,stroke:#1d8348,stroke-width:2px
+    style BlackboxDeploy fill:#d5f5e3,stroke:#1d8348,stroke-width:2px
+    style BlackboxSvc fill:#d5f5e3,stroke:#1d8348,stroke-width:2px
+    style K8sAPI fill:#d5f5e3,stroke:#1d8348,stroke-width:2px
+    style ApigeeIngress fill:#d5f5e3,stroke:#1d8348,stroke-width:2px
+
+    style PVC fill:#fdebd0,stroke:#d35400,stroke-width:2px
+    style Prometheus fill:#fdebd0,stroke:#d35400,stroke-width:2px
 ```
 
 
