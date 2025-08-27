@@ -6,9 +6,40 @@ metadata:
   labels:
     {{- include "prometheus-apigee-exporter.labels" . | nindent 4 }}
 ---
+# 2. Role in the Helm release namespace (for future use, good practice)
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
+  name: {{ include "prometheus-apigee-exporter.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "prometheus-apigee-exporter.labels" . | nindent 4 }}
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+---
+# 3. RoleBinding in the Helm release namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "prometheus-apigee-exporter.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "prometheus-apigee-exporter.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "prometheus-apigee-exporter.fullname" . }}
+subjects:
+- kind: ServiceAccount
+  name: {{ include "prometheus-apigee-exporter.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  namespace: {{ .Values.cronjob.apigeeNamespace }}
   name: {{ include "prometheus-apigee-exporter.fullname" . }}
   labels:
     {{- include "prometheus-apigee-exporter.labels" . | nindent 4 }}
@@ -21,14 +52,14 @@ rules:
   verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
+kind: ClusterRoleBinding
 metadata:
   name: {{ include "prometheus-apigee-exporter.fullname" . }}
   labels:
     {{- include "prometheus-apigee-exporter.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: Role
+  kind: ClusterRole
   name: {{ include "prometheus-apigee-exporter.fullname" . }}
 subjects:
 - kind: ServiceAccount

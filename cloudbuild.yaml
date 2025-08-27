@@ -1,0 +1,44 @@
+# cloudbuild.yaml
+# This build config is used when pushing to Docker Hub.
+
+steps:
+  # 1. Build the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build'
+    args:
+      - 'build'
+      - '-t'
+      - '${_FULL_IMAGE_URL}'
+      - './python-script' # Build context is the python-script directory
+
+  # 2. Retrieve the Docker Hub PAT from Secret Manager
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'Get Secret'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud secrets versions access latest --secret=${_SECRET_ID} > /workspace/pat.txt
+
+  # 3. Log in to Docker Hub using the retrieved PAT
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Login'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - 'docker login --username=${_DOCKERHUB_USERNAME} --password-stdin < /workspace/pat.txt'
+    # This step must run after the secret has been retrieved
+    waitFor: ['Get Secret']
+
+  # 4. Push the image to Docker Hub
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Push'
+    args: ['push', '${_FULL_IMAGE_URL}']
+    # This step must run after a successful login
+    waitFor: ['Login']
+
+# Define the substitution variables this build expects
+substitutions:
+  _FULL_IMAGE_URL: 'your-username/your-image:latest'
+  _DOCKERHUB_USERNAME: 'your-username'
+  _SECRET_ID: 'your-secret-id'

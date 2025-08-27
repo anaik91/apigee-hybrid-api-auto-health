@@ -27,7 +27,7 @@ def get_k8s_service_ip(namespace, service_name):
 def get_apigee_routes_from_cluster(namespace):
     GROUP, VERSION, PLURAL = "apigee.cloud.google.com", "v1alpha2", "apigeeroutes"
     try:
-        config.load_kube_config()
+        config.load_incluster_config()
         api = client.CustomObjectsApi()
         print(f"Fetching ApigeeRoutes from namespace '{namespace}'...", file=sys.stderr)
         api_response = api.list_namespaced_custom_object(
@@ -102,7 +102,7 @@ def main():
 
     # Load K8s config first
     try:
-        config.load_kube_config()
+        config.load_incluster_config()
     except config.ConfigException as e:
         print(f"Error loading kubeconfig: {e}", file=sys.stderr)
         sys.exit(1)
